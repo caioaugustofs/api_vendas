@@ -5,11 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vender_api.database import get_session
 
-router = APIRouter(prefix='/estoque', tags=['estoque'])
+router = APIRouter(prefix='/users', tags=['users'])
 
 
 Session_my = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.get('/', response_model=list[dict])
-async def get_estoque(session: Session_my): ...
+@router.get(
+    '/',
+)
+async def get_users(session: Session_my): ...
