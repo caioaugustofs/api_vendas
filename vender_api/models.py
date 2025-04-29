@@ -22,3 +22,18 @@ class Produtos:
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )
+
+
+@table_registry.mapped_as_dataclass
+class Estoque:
+    __tablename__ = 'estoque'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    sku: Mapped[str] = mapped_column()
+    quantidade: Mapped[int] = mapped_column()
+    preço_de_aquisição: Mapped[float] = mapped_column()
+    data_de_aquisição: Mapped[str] = mapped_column()
+    fornecedor_id: Mapped[str] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
