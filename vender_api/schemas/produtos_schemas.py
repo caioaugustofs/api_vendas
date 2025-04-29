@@ -6,10 +6,9 @@ class Message(BaseModel):
 
 
 class ProdutosSchema(BaseModel):
-    id: int
     sku: str
     nome: str
-    frabricante: str
+    fabricante: str
     id_fabricante: str
     categoria: str
     peso: float
