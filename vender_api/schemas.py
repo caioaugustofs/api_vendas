@@ -12,6 +12,8 @@ class ProdutosSchema(BaseModel):
     frabricante: str
     id_fabricante: str
     categoria: str
+    peso: float
+    dimensao: str
     ativo: bool
 
 

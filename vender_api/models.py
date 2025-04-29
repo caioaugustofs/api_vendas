@@ -16,6 +16,8 @@ class Produtos:
     fabricante: Mapped[str] = mapped_column()
     id_fabricante: Mapped[str] = mapped_column()
     categoria: Mapped[str] = mapped_column()
+    peso: Mapped[float] = mapped_column()
+    dimensao: Mapped[str] = mapped_column()
     ativo: Mapped[bool] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
