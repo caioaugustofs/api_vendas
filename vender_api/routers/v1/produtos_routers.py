@@ -21,7 +21,23 @@ Session_my = Annotated[AsyncSession, Depends(get_session)]
 @router.get('/', response_model=list[ProdutosPublic])
 async def get_products(session: Session_my):
     """
+    ## Recupera todos os produtos
+
     Retorna uma lista de todos os produtos cadastrados no banco de dados.
+
+    **Retorno:**
+    - `List[ProdutosPublic]`: Lista de todos os produtos cadastrados.
+
+    **Status Codes:**
+    - `200`: Sucesso.
+
+    **Exemplo de response:**
+    ```json
+    [
+      {"id": 1, "nome": "Notebook", "sku": "NB123", "ativo": true},
+      {"id": 2, "nome": "Mouse", "sku": "MS456", "ativo": false}
+    ]
+    ```
     """
     result = await session.execute(select(Produtos))
     produtos = result.scalars().all()
@@ -32,8 +48,29 @@ async def get_products(session: Session_my):
 @router.get('/{produto_id}', response_model=ProdutosPublic)
 async def get_product(produto_id: int, session: Session_my):
     """
-    Busca e retorna um produto específico pelo seu ID.
-    Se não encontrar, retorna erro 404.
+    ## Recupera um produto pelo ID
+
+    Retorna os dados de um produto específico a partir do seu ID.
+
+    **Parâmetros:**
+    - `produto_id` (`int`): O ID do produto a ser buscado.
+
+    **Retorno:**
+    - `ProdutosPublic`: Dados do produto encontrado.
+
+    **Status Codes:**
+    - `200`: Sucesso.
+    - `404`: Produto não encontrado.
+
+    **Exemplo de response:**
+    ```json
+    {
+      "id": 1,
+      "nome": "Notebook",
+      "sku": "NB123",
+      "ativo": true
+    }
+    ```
     """
     result = await session.execute(
         select(Produtos).where(Produtos.id == produto_id)
@@ -51,8 +88,29 @@ async def get_product(produto_id: int, session: Session_my):
 @router.get('/sku/{sku}', response_model=ProdutosPublic)
 async def get_product_by_sku(sku: str, session: Session_my):
     """
-    Busca e retorna um produto específico pelo seu SKU.
-    Se não encontrar, retorna erro 404.
+    ## Recupera um produto pelo SKU
+
+    Retorna os dados de um produto específico a partir do seu SKU.
+
+    **Parâmetros:**
+    - `sku` (`str`): O SKU do produto a ser buscado.
+
+    **Retorno:**
+    - `ProdutosPublic`: Dados do produto encontrado.
+
+    **Status Codes:**
+    - `200`: Sucesso.
+    - `404`: Produto não encontrado.
+
+    **Exemplo de response:**
+    ```json
+    {
+      "id": 1,
+      "nome": "Notebook",
+      "sku": "NB123",
+      "ativo": true
+    }
+    ```
     """
     result = await session.execute(select(Produtos).where(Produtos.sku == sku))
     db_produto = result.scalar_one_or_none()
@@ -69,8 +127,39 @@ async def get_product_by_sku(sku: str, session: Session_my):
 )
 async def create_product(produto: ProdutosSchema, session: Session_my):
     """
+    ## Cria um novo produto
+
     Cria um novo produto com os dados enviados no corpo da requisição.
-    Se já existir um produto com o mesmo SKU, retorna erro 409 (conflito).
+
+    **Parâmetros:**
+    - `produto` (`ProdutosSchema`): Dados para criação do produto.
+
+    **Retorno:**
+    - `ProdutosPublic`: Dados do produto criado.
+
+    **Status Codes:**
+    - `201`: Produto criado com sucesso.
+    - `400`: Dados inválidos.
+    - `409`: Produto já cadastrado com esse SKU.
+
+    **Exemplo de request:**
+    ```json
+    {
+      "nome": "Notebook",
+      "sku": "NB123",
+      "ativo": true
+    }
+    ```
+
+    **Exemplo de response:**
+    ```json
+    {
+      "id": 1,
+      "nome": "Notebook",
+      "sku": "NB123",
+      "ativo": true
+    }
+    ```
     """
     result = await session.execute(
         select(Produtos).where(Produtos.sku == produto.sku)
@@ -98,9 +187,33 @@ async def update_product_status(
     produto_id: int, ativar_desativar: bool, session: Session_my
 ):
     """
-    Ativa ou desativa um produto, alterando o campo 'ativo'.
-    conforme o valor booleano enviado na URL (ativar_desativar).
-    Se o produto não existir, retorna erro 404.
+    ## Ativa ou desativa um produto
+
+    Altera o status de ativo/inativo de um produto, conforme o valor booleano enviado na URL.
+
+    **Parâmetros:**
+    - `produto_id` (`int`): O ID do produto a ser atualizado.
+    - `ativar_desativar` (`bool`): Define se o produto será ativado (`true`) ou desativado (`false`).
+
+    **Retorno:**
+    - `ProdutosPublic`: Dados do produto atualizado.
+
+    **Status Codes:**
+    - `200`: Produto atualizado com sucesso.
+    - `404`: Produto não encontrado.
+
+    **Exemplo de request:**
+    PATCH /produtos/1/false
+
+    **Exemplo de response:**
+    ```json
+    {
+      "id": 1,
+      "nome": "Notebook",
+      "sku": "NB123",
+      "ativo": false
+    }
+    ```
     """
     db_produto = await session.get(Produtos, produto_id)
     if not db_produto:
@@ -117,9 +230,24 @@ async def update_product_status(
 @router.delete('/{produto_id}')
 async def delete_product(produto_id: int, session: Session_my):
     """
+    ## Deleta um produto existente
+
     Remove um produto do banco de dados pelo seu ID.
-    Se não encontrar, retorna erro 404.
-    Se deletar com sucesso, retorna uma mensagem de confirmação.
+
+    **Parâmetros:**
+    - `produto_id` (`int`): O ID do produto a ser deletado.
+
+    **Retorno:**
+    - `dict`: Mensagem de sucesso.
+
+    **Status Codes:**
+    - `200`: Produto deletado com sucesso.
+    - `404`: Produto não encontrado.
+
+    **Exemplo de response:**
+    ```json
+    {"message": "Produto deletado com sucesso"}
+    ```
     """
     db_produto = await session.get(Produtos, produto_id)
     if not db_produto:

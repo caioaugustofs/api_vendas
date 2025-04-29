@@ -11,6 +11,7 @@ class ProdutosSchema(BaseModel):
     fabricante: str
     id_fabricante: str
     categoria: str
+    sub_categoria: str | None = None
     peso: float
     dimensao: str
     ativo: bool
@@ -28,3 +29,6 @@ class ProdutosPublic(BaseModel):
 
 class ProdutosList(BaseModel):
     produtos: list[ProdutosPublic]
+
+    class Config:
+        orm_mode = True

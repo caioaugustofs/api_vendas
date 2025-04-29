@@ -37,6 +37,28 @@ class User:
 
 
 @table_registry.mapped_as_dataclass
+class Categoria:
+    __tablename__ = 'categorias'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    nome: Mapped[str] = mapped_column(unique=True)
+    created_at: Mapped[datetime] = mapped_column(init=False, server_default=func.now())
+    subcategorias: Mapped[list['SubCategoria']] = relationship('SubCategoria', back_populates='categoria', init=False)
+
+
+@table_registry.mapped_as_dataclass
+class SubCategoria:
+    __tablename__ = 'subcategorias'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    nome: Mapped[str] = mapped_column()
+    categoria_id: Mapped[int] = mapped_column(ForeignKey('categorias.id'))
+    created_at: Mapped[datetime] = mapped_column(init=False, server_default=func.now())
+    categoria: Mapped['Categoria'] = relationship('Categoria', back_populates='subcategorias', init=False)
+    produtos: Mapped[list['Produtos']] = relationship('Produtos', back_populates='subcategoria', init=False)
+
+
+@table_registry.mapped_as_dataclass
 class Produtos:
     __tablename__ = 'produtos'
 
@@ -45,7 +67,7 @@ class Produtos:
     nome: Mapped[str] = mapped_column()
     fabricante: Mapped[str] = mapped_column()
     id_fabricante: Mapped[str] = mapped_column()
-    categoria: Mapped[str] = mapped_column()
+    subcategoria_id: Mapped[int] = mapped_column(ForeignKey('subcategorias.id'))
     peso: Mapped[float] = mapped_column()
     dimensao: Mapped[str] = mapped_column()
     ativo: Mapped[bool] = mapped_column()
@@ -55,6 +77,7 @@ class Produtos:
     estoque: Mapped[list['Estoque']] = relationship(
         'Estoque', back_populates='produto', init=False
     )
+    subcategoria: Mapped['SubCategoria'] = relationship('SubCategoria', back_populates='produtos', init=False)
 
 
 @table_registry.mapped_as_dataclass
