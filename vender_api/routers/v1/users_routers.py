@@ -15,11 +15,14 @@ from vender_api.schemas.users_schemas import (
     UserUpdate,
     userPublic,
 )
+from vender_api.security import get_current_user, get_password_hash
 
 router = APIRouter(prefix='/users', tags=['users'])
 
 
+# Dependências
 Session = Annotated[AsyncSession, Depends(get_session)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 @router.get('/', response_model=list[userPublic], status_code=HTTPStatus.OK)
@@ -65,10 +68,12 @@ async def create_user(user: UserCreate, session: Session):
             detail='User already exists',
         )
 
+    hashed_password = get_password_hash(user.password)
+
     new_user = User(
         username=user.username,
         email=user.email,
-        password=user.password,
+        password=hashed_password,
     )
 
     session.add(new_user)
@@ -108,10 +113,20 @@ async def update_user_password(
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
-    db_user.password = password_update.password
-    await session.commit()
-    await session.refresh(db_user)
-    return db_user
+
+    try:
+        hashed_password = get_password_hash(password_update.password)
+        db_user.password = hashed_password
+
+        await session.commit()
+        await session.refresh(db_user)
+        return db_user
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail='Erro ao atualizar a senha do usuário.',
+        ) from e
 
 
 # PATCH para atualizar is_active
@@ -142,10 +157,11 @@ async def update_user_is_verified(
     return db_user
 
 
+# DELETE para deletar um usuário
 @router.delete('/{user_id}', status_code=HTTPStatus.NO_CONTENT)
-async def delete_user(user_id: int, session: Session):
-    """Deleta um usuario pelo ID"""
-
+async def delete_user(
+    user_id: int, session: Session, current_user: CurrentUser
+):
     db_user = await session.scalar(select(User).where(User.id == user_id))
 
     if not db_user:
