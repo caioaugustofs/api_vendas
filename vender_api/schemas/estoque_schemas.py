@@ -89,3 +89,14 @@ class EstoquePublic(EstoqueBase):
 
     class Config:
         orm_mode = True
+
+
+# Schemas de criação
+class EntradaEstoqueCreate(EntradaEstoqueBase):
+    pass
+
+class SaidaEstoqueCreate(SaidaEstoqueBase):
+    pass
+
+class EstoqueCreate(EstoqueBase):
+    pass
