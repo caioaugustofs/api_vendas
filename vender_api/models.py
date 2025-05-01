@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
+from sqlalchemy.orm import Mapped, mapped_column, registry
 
 table_registry = registry()
 
@@ -37,57 +37,25 @@ class User:
 
 
 @table_registry.mapped_as_dataclass
-class Categoria:
-    __tablename__ = 'categorias'
-
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    nome: Mapped[str] = mapped_column(unique=True)
-    created_at: Mapped[datetime] = mapped_column(
-        init=False, server_default=func.now()
-    )
-    subcategorias: Mapped[list['SubCategoria']] = relationship(
-        'SubCategoria', back_populates='categoria', init=False
-    )
-
-
-@table_registry.mapped_as_dataclass
-class SubCategoria:
-    __tablename__ = 'subcategorias'
-
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    nome: Mapped[str] = mapped_column()
-    categoria_id: Mapped[int] = mapped_column(ForeignKey('categorias.id'))
-    created_at: Mapped[datetime] = mapped_column(
-        init=False, server_default=func.now()
-    )
-    categoria: Mapped['Categoria'] = relationship(
-        'Categoria', back_populates='subcategorias', init=False
-    )
-
-
-@table_registry.mapped_as_dataclass
 class Produtos:
     __tablename__ = 'produtos'
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    sku: Mapped[str] = mapped_column(unique=True)
+    sku: Mapped[str] = mapped_column(unique=True, nullable=False)
     nome: Mapped[str] = mapped_column()
-    fabricante: Mapped[str] = mapped_column()
     preco: Mapped[float] = mapped_column()
-    ativo: Mapped[bool] = mapped_column()
-    categoria_id: Mapped[int | None] = mapped_column(
-        nullable=True, default=None
-    )
-    subcategoria_id: Mapped[int | None] = mapped_column(
-        nullable=True, default=None
-    )
+    ativo: Mapped[bool] = mapped_column(default=False)
+    fabricante: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    categoria_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    subcategoria_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
     dimensao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     peso: Mapped[float | None] = mapped_column(nullable=True, default=None)
+    descricao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )
-    estoque: Mapped[list['Estoque']] = relationship(
-        'Estoque', back_populates='produto', init=False
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -97,42 +65,33 @@ class Estoque:
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     produto_sku: Mapped[str] = mapped_column(ForeignKey('produtos.sku'))
-    fornecedor_id: Mapped[int] = mapped_column(ForeignKey('fornecedores.id'))
     quantidade: Mapped[int] = mapped_column()
     preco_de_aquisicao: Mapped[float] = mapped_column()
     data_de_aquisicao: Mapped[datetime] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(
-        init=False, server_default=func.now()
-    )
-    produto: Mapped['Produtos'] = relationship(
-        'Produtos', back_populates='estoque', init=False
-    )
-    fornecedor: Mapped['Fornecedores'] = relationship(
-        'Fornecedores', back_populates='estoques', init=False
-    )
-
-
-@table_registry.mapped_as_dataclass
-class Fornecedores:
-    __tablename__ = 'fornecedores'
-
-    id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    nome: Mapped[str] = mapped_column()
-    cnpj: Mapped[str] = mapped_column()
-    telefone: Mapped[str] = mapped_column()
-    email: Mapped[str] = mapped_column()
-    endereco: Mapped[str] = mapped_column()
-    cidade: Mapped[str] = mapped_column()
-    estado: Mapped[str] = mapped_column()
-    pais: Mapped[str] = mapped_column()
-    cep: Mapped[str] = mapped_column()
+    fornecedor_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    lote: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    numero_serie: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    observacao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now(), onupdate=func.now()
     )
-    ativo: Mapped[bool] = mapped_column(default=True)
-    estoques: Mapped[list[Estoque]] = relationship(
-        'Estoque', back_populates='fornecedor', init=False
-    )
+
+
+@table_registry.mapped_as_dataclass
+class Fornecedor:
+    __tablename__ = 'fornecedores'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    nome: Mapped[str] = mapped_column()
+    cnpj: Mapped[str] = mapped_column(unique=True)
+    inscricao_estadual: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    endereco: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    cidade: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    estado: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    pais: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    cep: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    telefone: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    email: Mapped[str | None] = mapped_column(nullable=True, default=None)

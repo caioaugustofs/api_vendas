@@ -17,7 +17,7 @@ from vender_api.schemas.users_schemas import (
 )
 from vender_api.security import get_current_user, get_password_hash
 
-router = APIRouter(prefix='/users', tags=['users'])
+router = APIRouter(prefix='/users', tags=['Users'])
 
 
 # Dependências
@@ -25,20 +25,32 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-@router.get('/', response_model=list[userPublic], status_code=HTTPStatus.OK)
+@router.get(
+    '/',
+    response_model=list[userPublic],
+    status_code=HTTPStatus.OK,
+    summary='Retorna todos os usuários',
+)
 async def get_users(
     session: Session,
 ):
-    """Retorna todos os usuarios"""
-    db_users = await session.execute(select(User))
+    """Retorna todos os usuarios exceto superusers"""
+    db_users = await session.execute(select(User).where(User.is_superuser == False))
     return db_users.scalars().all()
 
 
-@router.get('/{user_id}', status_code=HTTPStatus.OK)
+@router.get(
+    '/{user_id}',
+    status_code=HTTPStatus.OK,
+    summary='Retorna um usuário pelo ID',
+)
 async def get_user_by_user(user_id: int, session: Session):
     """Retorna um usuario pelo ID"""
 
-    db_user = await session.scalar(select(User).where(User.id == user_id))
+    db_user = await session.scalar(select(User).where(
+        or_(User.id == user_id,
+            User.is_superuser == False))
+            )
 
     if not db_user:
         raise HTTPException(
@@ -49,7 +61,12 @@ async def get_user_by_user(user_id: int, session: Session):
     return db_user
 
 
-@router.post('/', status_code=HTTPStatus.CREATED, response_model=userPublic)
+@router.post(
+    '/',
+    status_code=HTTPStatus.CREATED,
+    response_model=userPublic,
+    summary='Cria um novo usuário',
+)
 async def create_user(user: UserCreate, session: Session):
     """Cria  um novo usuario"""
 
@@ -82,7 +99,12 @@ async def create_user(user: UserCreate, session: Session):
     return new_user
 
 
-@router.patch('/{user_id}', response_model=userPublic)
+@router.patch(
+    '/{user_id}',
+    response_model=userPublic,
+    status_code=HTTPStatus.OK,
+    summary='Atualiza  informações do usuário',
+)
 async def update_user(user_id: int, user_update: UserUpdate, session: Session):
     """
     Atualiza um ou mais campos do usuário (exceto username, email e password).
@@ -106,7 +128,12 @@ async def update_user(user_id: int, user_update: UserUpdate, session: Session):
     return db_user
 
 
-@router.patch('/{user_id}/password', response_model=userPublic)
+@router.patch(
+    '/{user_id}/password',
+    response_model=userPublic,
+    status_code=HTTPStatus.OK,
+    summary='Atualiza a senha do usuário',
+)
 async def update_user_password(
     user_id: int, password_update: UserPasswordUpdate, session: Session
 ):
@@ -130,7 +157,12 @@ async def update_user_password(
 
 
 # PATCH para atualizar is_active
-@router.patch('/{user_id}/is_active', response_model=userPublic)
+@router.patch(
+    '/{user_id}/is_active',
+    response_model=userPublic,
+    status_code=HTTPStatus.OK,
+    summary='Atualiza o status de atividade do usuário',
+)
 async def update_user_is_active(
     user_id: int, is_active_update: UserIsActiveUpdate, session: Session
 ):
@@ -144,21 +176,35 @@ async def update_user_is_active(
 
 
 # PATCH para atualizar is_verified
-@router.patch('/{user_id}/is_verified', response_model=userPublic)
+@router.patch(
+    '/{user_id}/is_verified',
+    response_model=userPublic,
+    status_code=HTTPStatus.OK,
+    summary='Atualiza o status de verificação do usuário',
+)
 async def update_user_is_verified(
     user_id: int, is_verified_update: UserIsVerifiedUpdate, session: Session
 ):
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
-    db_user.is_verified = is_verified_update.is_verified
-    await session.commit()
-    await session.refresh(db_user)
-    return db_user
+
+    try:
+        db_user.is_verified = is_verified_update.is_verified
+        await session.commit()
+        await session.refresh(db_user)
+        return db_user
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail='Erro ao atualizar o status de verificação do usuário.',
+        ) from e
 
 
 # DELETE para deletar um usuário
-@router.delete('/{user_id}', status_code=HTTPStatus.NO_CONTENT)
+@router.delete(
+    '/{user_id}', status_code=HTTPStatus.NO_CONTENT, summary='Deleta usuário'
+)
 async def delete_user(
     user_id: int, session: Session, current_user: CurrentUser
 ):

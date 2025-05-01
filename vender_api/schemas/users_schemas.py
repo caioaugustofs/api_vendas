@@ -1,12 +1,22 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=20,
+        description='Nome de usuário deve ter entre 3 e 20 caracteres',
+    )
+    email: EmailStr
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=20,
+        description='Senha deve ter entre 8 e 20 caracteres',
+    )
 
 
 class userPublic(BaseModel):
