@@ -13,11 +13,17 @@ class EntradaEstoqueBase(BaseModel):
         ..., ge=1, description='Quantidade de entrada', example=10
     )
     data_entrada: datetime = Field(
-        ..., description='Data e hora da entrada', example='2025-05-01T15:00:00'
+        ...,
+        description='Data e hora da entrada',
+        example='2025-05-01T15:00:00',
     )
     observacao: Optional[str] = Field(
-        None, description='Observação', max_length=255, example='Recebido sem avarias.'
+        None,
+        description='Observação',
+        max_length=255,
+        example='Recebido sem avarias.',
     )
+
 
 class EntradaEstoquePublic(EntradaEstoqueBase):
     id: int
@@ -39,9 +45,11 @@ class SaidaEstoqueBase(BaseModel):
         ..., description='Data e hora da saída', example='2025-05-01T16:00:00'
     )
     observacao: Optional[str] = Field(
-        None, description='Observação', max_length=255, example='Saída para cliente X.'
+        None,
+        description='Observação',
+        max_length=255,
+        example='Saída para cliente X.',
     )
-
 
 
 class SaidaEstoquePublic(SaidaEstoqueBase):
@@ -67,10 +75,16 @@ class EstoqueBase(BaseModel):
         None, description='Lote do produto', max_length=50, example='L2025-01'
     )
     numero_serie: Optional[str] = Field(
-        None, description='Número de série', max_length=100, example='SN123456789'
+        None,
+        description='Número de série',
+        max_length=100,
+        example='SN123456789',
     )
     observacao: Optional[str] = Field(
-        None, description='Observação', max_length=255, example='Estoque inicial.'
+        None,
+        description='Observação',
+        max_length=255,
+        example='Estoque inicial.',
     )
 
 
@@ -78,8 +92,12 @@ class EstoqueUpdate(BaseModel):
     quantidade: Optional[int] = Field(None, ge=0, example=50)
     fornecedor_id: Optional[int] = Field(None, example=1)
     lote: Optional[str] = Field(None, max_length=50, example='L2025-01')
-    numero_serie: Optional[str] = Field(None, max_length=100, example='SN123456789')
-    observacao: Optional[str] = Field(None, max_length=255, example='Atualização de estoque.')
+    numero_serie: Optional[str] = Field(
+        None, max_length=100, example='SN123456789'
+    )
+    observacao: Optional[str] = Field(
+        None, max_length=255, example='Atualização de estoque.'
+    )
 
 
 class EstoquePublic(EstoqueBase):
@@ -95,8 +113,10 @@ class EstoquePublic(EstoqueBase):
 class EntradaEstoqueCreate(EntradaEstoqueBase):
     pass
 
+
 class SaidaEstoqueCreate(SaidaEstoqueBase):
     pass
+
 
 class EstoqueCreate(EstoqueBase):
     pass
