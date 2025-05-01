@@ -3,6 +3,9 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, registry
 
+# Entradas de Estoque
+
+
 table_registry = registry()
 
 
@@ -46,8 +49,12 @@ class Produtos:
     preco: Mapped[float] = mapped_column()
     ativo: Mapped[bool] = mapped_column(default=False)
     fabricante: Mapped[str | None] = mapped_column(nullable=True, default=None)
-    categoria_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
-    subcategoria_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    categoria_id: Mapped[int | None] = mapped_column(
+        nullable=True, default=None
+    )
+    subcategoria_id: Mapped[int | None] = mapped_column(
+        nullable=True, default=None
+    )
     dimensao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     peso: Mapped[float | None] = mapped_column(nullable=True, default=None)
     descricao: Mapped[str | None] = mapped_column(nullable=True, default=None)
@@ -66,11 +73,13 @@ class Estoque:
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     produto_sku: Mapped[str] = mapped_column(ForeignKey('produtos.sku'))
     quantidade: Mapped[int] = mapped_column()
-    preco_de_aquisicao: Mapped[float] = mapped_column()
-    data_de_aquisicao: Mapped[datetime] = mapped_column()
-    fornecedor_id: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    fornecedor_id: Mapped[int | None] = mapped_column(
+        nullable=True, default=None
+    )
     lote: Mapped[str | None] = mapped_column(nullable=True, default=None)
-    numero_serie: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    numero_serie: Mapped[str | None] = mapped_column(
+        nullable=True, default=None
+    )
     observacao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
@@ -87,7 +96,9 @@ class Fornecedor:
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     nome: Mapped[str] = mapped_column()
     cnpj: Mapped[str] = mapped_column(unique=True)
-    inscricao_estadual: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    inscricao_estadual: Mapped[str | None] = mapped_column(
+        nullable=True, default=None
+    )
     endereco: Mapped[str | None] = mapped_column(nullable=True, default=None)
     cidade: Mapped[str | None] = mapped_column(nullable=True, default=None)
     estado: Mapped[str | None] = mapped_column(nullable=True, default=None)
@@ -95,3 +106,38 @@ class Fornecedor:
     cep: Mapped[str | None] = mapped_column(nullable=True, default=None)
     telefone: Mapped[str | None] = mapped_column(nullable=True, default=None)
     email: Mapped[str | None] = mapped_column(nullable=True, default=None)
+
+
+@table_registry.mapped_as_dataclass
+class EntradaEstoque:
+    __tablename__ = 'entradas_estoque'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    produto_sku: Mapped[str] = mapped_column(ForeignKey('produtos.sku'))
+    quantidade: Mapped[int] = mapped_column()
+    data_entrada: Mapped[datetime] = mapped_column()
+    observacao: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+# Saídas de Estoque
+@table_registry.mapped_as_dataclass
+class SaidaEstoque:
+    __tablename__ = 'saidas_estoque'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    produto_sku: Mapped[str] = mapped_column(ForeignKey('produtos.sku'))
+    quantidade: Mapped[int] = mapped_column()
+    data_saida: Mapped[datetime] = mapped_column()
+    observacao: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
+    )

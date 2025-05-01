@@ -12,6 +12,7 @@ from vender_api.schemas.estoque_schemas import (
     EstoquePublic,
     EstoqueUpdate,
 )
+from vender_api.tools.decorador import commit_and_refresh
 
 router = APIRouter(prefix='/estoque', tags=['Estoque'])
 
@@ -25,43 +26,64 @@ async def get_estoques(session: Session):
     return db_estoques.scalars().all()
 
 
-@router.get('/{estoque_id}', response_model=EstoquePublic, status_code=HTTPStatus.OK)
-async def get_estoque_by_id(estoque_id: int, session: Session):
+@router.get(
+    '/{estoque_id}', response_model=EstoquePublic, status_code=HTTPStatus.OK
+)
+async def get_estoque_by_id(
+    estoque_id: int, session: Session, skip: int = 0, limit: int = 100
+):
     """Retorna um registro de estoque pelo ID."""
-    db_estoque = await session.scalar(select(Estoque).where(Estoque.id == estoque_id))
+    db_estoque = await session.scalar(
+        select(Estoque)
+        .where(Estoque.id == estoque_id)
+        .offset(skip)
+        .limit(limit)
+    )
     if not db_estoque:
         raise HTTPException(status_code=404, detail='Estoque não encontrado')
     return db_estoque
 
 
 @router.post('/', response_model=EstoquePublic, status_code=HTTPStatus.CREATED)
+@commit_and_refresh(
+    status_code=400,
+    detail='Erro ao criar o estoque',
+)
 async def create_estoque(estoque: EstoqueCreate, session: Session):
     """Cria um novo registro de estoque."""
     new_estoque = Estoque(**estoque.dict())
     session.add(new_estoque)
-    await session.commit()
-    await session.refresh(new_estoque)
     return new_estoque
 
 
-@router.patch('/{estoque_id}', response_model=EstoquePublic, status_code=HTTPStatus.OK)
-async def update_estoque(estoque_id: int, estoque_update: EstoqueUpdate, session: Session):
+@router.patch(
+    '/{estoque_id}', response_model=EstoquePublic, status_code=HTTPStatus.OK
+)
+@commit_and_refresh(
+    status_code=400,
+    detail='Erro ao atualizar o estoque',
+)
+async def update_estoque(
+    estoque_id: int, estoque_update: EstoqueUpdate, session: Session
+):
     """Atualiza campos de um registro de estoque."""
-    db_estoque = await session.scalar(select(Estoque).where(Estoque.id == estoque_id))
+    db_estoque = await session.scalar(
+        select(Estoque).where(Estoque.id == estoque_id)
+    )
     if not db_estoque:
         raise HTTPException(status_code=404, detail='Estoque não encontrado')
     update_data = estoque_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_estoque, field, value)
-    await session.commit()
-    await session.refresh(db_estoque)
     return db_estoque
 
 
 @router.delete('/{estoque_id}', status_code=HTTPStatus.NO_CONTENT)
 async def delete_estoque(estoque_id: int, session: Session):
     """Remove um registro de estoque."""
-    db_estoque = await session.scalar(select(Estoque).where(Estoque.id == estoque_id))
+    db_estoque = await session.scalar(
+        select(Estoque).where(Estoque.id == estoque_id)
+    )
     if not db_estoque:
         raise HTTPException(status_code=404, detail='Estoque não encontrado')
     await session.delete(db_estoque)

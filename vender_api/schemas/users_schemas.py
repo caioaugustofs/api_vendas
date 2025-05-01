@@ -6,11 +6,14 @@ from pydantic import BaseModel, EmailStr, Field
 class UserCreate(BaseModel):
     username: str = Field(
         ...,
-        min_length=3,
+        min_length=5,
         max_length=20,
-        description='Nome de usuário deve ter entre 3 e 20 caracteres',
+        description='Nome de usuário deve ter entre 5 e 20 caracteres',
     )
-    email: EmailStr
+    email: EmailStr = Field(
+        ...,
+        description='Email deve ser um email válido',
+    )
     password: str = Field(
         ...,
         min_length=8,
@@ -25,8 +28,8 @@ class userPublic(BaseModel):
     email: str
 
 
-class UserLisr(BaseModel):
-    User: list[userPublic]
+class UserList(BaseModel):
+    users: list[userPublic]
 
 
 class UserUpdate(BaseModel):

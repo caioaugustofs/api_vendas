@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vender_api.database import get_session
@@ -16,6 +16,7 @@ from vender_api.schemas.users_schemas import (
     userPublic,
 )
 from vender_api.security import get_current_user, get_password_hash
+from vender_api.tools.decorador import commit_and_refresh
 
 router = APIRouter(prefix='/users', tags=['Users'])
 
@@ -33,9 +34,13 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 )
 async def get_users(
     session: Session,
+    skip: int = 0,
+    limit: int = 25,
 ):
     """Retorna todos os usuarios exceto superusers"""
-    db_users = await session.execute(select(User).where(User.is_superuser == False))
+    db_users = await session.execute(
+        select(User).where(not_(User.is_superuser)).offset(skip).limit(limit)
+    )
     return db_users.scalars().all()
 
 
@@ -47,10 +52,9 @@ async def get_users(
 async def get_user_by_user(user_id: int, session: Session):
     """Retorna um usuario pelo ID"""
 
-    db_user = await session.scalar(select(User).where(
-        or_(User.id == user_id,
-            User.is_superuser == False))
-            )
+    db_user = await session.scalar(
+        select(User).where(or_(User.id == user_id, not_(User.is_superuser)))
+    )
 
     if not db_user:
         raise HTTPException(
@@ -67,6 +71,7 @@ async def get_user_by_user(user_id: int, session: Session):
     response_model=userPublic,
     summary='Cria um novo usuário',
 )
+@commit_and_refresh(status_code=400, detail='Erro ao criar usuário')
 async def create_user(user: UserCreate, session: Session):
     """Cria  um novo usuario"""
 
@@ -94,8 +99,6 @@ async def create_user(user: UserCreate, session: Session):
     )
 
     session.add(new_user)
-    await session.commit()
-    await session.refresh(new_user)
     return new_user
 
 
@@ -105,6 +108,7 @@ async def create_user(user: UserCreate, session: Session):
     status_code=HTTPStatus.OK,
     summary='Atualiza  informações do usuário',
 )
+@commit_and_refresh(status_code=400, detail='Erro ao atualizar usuário')
 async def update_user(user_id: int, user_update: UserUpdate, session: Session):
     """
     Atualiza um ou mais campos do usuário (exceto username, email e password).
@@ -123,8 +127,6 @@ async def update_user(user_id: int, user_update: UserUpdate, session: Session):
     for field, value in update_data.items():
         setattr(db_user, field, value)
 
-    await session.commit()
-    await session.refresh(db_user)
     return db_user
 
 
@@ -163,6 +165,9 @@ async def update_user_password(
     status_code=HTTPStatus.OK,
     summary='Atualiza o status de atividade do usuário',
 )
+@commit_and_refresh(
+    status_code=400, detail='Erro ao atualizar status de atividade'
+)
 async def update_user_is_active(
     user_id: int, is_active_update: UserIsActiveUpdate, session: Session
 ):
@@ -170,8 +175,6 @@ async def update_user_is_active(
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
     db_user.is_active = is_active_update.is_active
-    await session.commit()
-    await session.refresh(db_user)
     return db_user
 
 
@@ -182,6 +185,9 @@ async def update_user_is_active(
     status_code=HTTPStatus.OK,
     summary='Atualiza o status de verificação do usuário',
 )
+@commit_and_refresh(
+    status_code=400, detail='Erro ao atualizar status de verificação'
+)
 async def update_user_is_verified(
     user_id: int, is_verified_update: UserIsVerifiedUpdate, session: Session
 ):
@@ -189,16 +195,8 @@ async def update_user_is_verified(
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
 
-    try:
-        db_user.is_verified = is_verified_update.is_verified
-        await session.commit()
-        await session.refresh(db_user)
-        return db_user
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail='Erro ao atualizar o status de verificação do usuário.',
-        ) from e
+    db_user.is_verified = is_verified_update.is_verified
+    return db_user
 
 
 # DELETE para deletar um usuário
