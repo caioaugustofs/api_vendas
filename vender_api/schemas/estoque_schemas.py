@@ -38,9 +38,7 @@ class SaidaEstoqueBase(BaseModel):
     produto_sku: str = Field(
         ..., description='SKU do produto', example='ABC123'
     )
-    quantidade: int = Field(
-        ..., ge=1, description='Quantidade de saída', example=2
-    )
+
     data_saida: datetime = Field(
         ..., description='Data e hora da saída', example='2025-05-01T16:00:00'
     )
@@ -65,8 +63,12 @@ class EstoqueBase(BaseModel):
     produto_sku: str = Field(
         ..., description='SKU do produto', example='ABC123'
     )
+    # quantidade não deve ser informado pelo usuário, sempre inicia em 0 e só movimentação altera
     quantidade: int = Field(
-        ..., ge=0, description='Quantidade em estoque', example=100
+        0,
+        ge=0,
+        description='Quantidade em estoque (sempre inicia em 0, só movimentação altera)',
+        example=0,
     )
     fornecedor_id: Optional[int] = Field(
         None, description='ID do fornecedor', example=1
@@ -89,7 +91,8 @@ class EstoqueBase(BaseModel):
 
 
 class EstoqueUpdate(BaseModel):
-    quantidade: Optional[int] = Field(None, ge=0, example=50)
+    # quantidade não pode ser atualizada diretamente
+    # quantidade: Optional[int] = Field(None, ge=0, example=50)  # Removido para não permitir update
     fornecedor_id: Optional[int] = Field(None, example=1)
     lote: Optional[str] = Field(None, max_length=50, example='L2025-01')
     numero_serie: Optional[str] = Field(
