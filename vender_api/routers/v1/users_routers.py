@@ -1,3 +1,7 @@
+# Rotas de usuários
+# Este módulo contém as rotas relacionadas à manipulação de usuários na API.
+# Todas as rotas estão documentadas em português para facilitar o entendimento.
+
 from http import HTTPStatus
 from typing import Annotated
 
@@ -37,7 +41,16 @@ async def get_users(
     skip: int = 0,
     limit: int = 25,
 ):
-    """Retorna todos os usuarios exceto superusers"""
+    """
+    Retorna todos os usuários cadastrados, exceto os superusuários.
+
+    Parâmetros:
+        - skip: Número de usuários a pular (paginação).
+        - limit: Número máximo de usuários a retornar.
+
+    Retorna:
+        Lista de usuários públicos (sem informações sensíveis).
+    """
     db_users = await session.execute(
         select(User).where(not_(User.is_superuser)).offset(skip).limit(limit)
     )
@@ -50,18 +63,27 @@ async def get_users(
     summary='Retorna um usuário pelo ID',
 )
 async def get_user_by_user(user_id: int, session: Session):
-    """Retorna um usuario pelo ID"""
+    """
+    Retorna um usuário específico pelo seu ID.
+    Essa rota é útil para obter informações detalhadas sobre um usuário específico.
 
+    Parâmetros:
+        - user_id: ID do usuário a ser buscado.
+
+    Retorna:
+        Usuário correspondente ao ID informado.
+
+    Erros:
+        - 404: Usuário não encontrado.
+    """
     db_user = await session.scalar(
         select(User).where(or_(User.id == user_id, not_(User.is_superuser)))
     )
-
     if not db_user:
         raise HTTPException(
             status_code=404,
             detail='User not found',
         )
-
     return db_user
 
 
@@ -73,8 +95,18 @@ async def get_user_by_user(user_id: int, session: Session):
 )
 @commit_and_refresh(status_code=400, detail='Erro ao criar usuário')
 async def create_user(user: UserCreate, session: Session):
-    """Cria  um novo usuario"""
+    """
+    Cria um novo usuário no sistema, armazenando suas informações de forma segura.
 
+    Parâmetros:
+        - user: Dados do novo usuário (username, email, senha).
+
+    Retorna:
+        Usuário criado (dados públicos).
+
+    Erros:
+        - 400: Usuário já existe (username ou email duplicado).
+    """
     db_user = await session.scalar(
         select(User).where(
             or_(
@@ -83,21 +115,17 @@ async def create_user(user: UserCreate, session: Session):
             )
         )
     )
-
     if db_user:
         raise HTTPException(
             status_code=400,
             detail='User already exists',
         )
-
     hashed_password = get_password_hash(user.password)
-
     new_user = User(
         username=user.username,
         email=user.email,
         password=hashed_password,
     )
-
     session.add(new_user)
     return new_user
 
@@ -111,22 +139,31 @@ async def create_user(user: UserCreate, session: Session):
 @commit_and_refresh(status_code=400, detail='Erro ao atualizar usuário')
 async def update_user(user_id: int, user_update: UserUpdate, session: Session):
     """
-    Atualiza um ou mais campos do usuário (exceto username, email e password).
-    Só os campos enviados no body serão atualizados.
+    Atualiza um ou mais campos do usuário (exceto username, email e senha),
+    permitindo a atualização de informações adicionais, como nome, sobrenome, etc.
+    Essa operação é útil para manter os dados do usuário atualizados.
+
+    Parâmetros:
+        - user_id: ID do usuário a ser atualizado.
+        - user_update: Dados a serem atualizados (apenas campos enviados serão alterados).
+
+    Retorna:
+        Usuário atualizado (dados públicos).
+
+    Erros:
+        - 404: Usuário não encontrado.
+        - 400: Nenhum campo enviado para atualizar.
     """
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
-
     update_data = user_update.dict(exclude_unset=True)
     if not update_data:
         raise HTTPException(
             status_code=400, detail='Nenhum campo enviado para atualizar.'
         )
-
     for field, value in update_data.items():
         setattr(db_user, field, value)
-
     return db_user
 
 
@@ -139,18 +176,30 @@ async def update_user(user_id: int, user_update: UserUpdate, session: Session):
 async def update_user_password(
     user_id: int, password_update: UserPasswordUpdate, session: Session
 ):
+    """
+    Atualiza a senha de um usuário especificado pelo ID no sistema.
+    Essa operação é útil para redefinir senhas ou atualizar senhas existentes.
+
+    Parâmetros:
+        - user_id: ID do usuário.
+        - password_update: Nova senha.
+
+    Retorna:
+        Usuário atualizado (dados públicos).
+
+    Erros:
+        - 404: Usuário não encontrado.
+        - 500: Erro ao atualizar a senha.
+    """
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
-
     try:
         hashed_password = get_password_hash(password_update.password)
         db_user.password = hashed_password
-
         await session.commit()
         await session.refresh(db_user)
         return db_user
-
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -171,6 +220,21 @@ async def update_user_password(
 async def update_user_is_active(
     user_id: int, is_active_update: UserIsActiveUpdate, session: Session
 ):
+    """
+    Atualiza o status de atividade (is_active) de um usuário,
+    permitindo ativar ou desativar o usuário no sistema.
+
+    Parâmetros:
+        - user_id: ID do usuário.
+        - is_active_update: Novo status de atividade (True ou False).
+
+
+    Retorna:
+        Usuário atualizado (dados públicos).
+
+    Erros:
+        - 404: Usuário não encontrado.
+    """
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
@@ -191,10 +255,24 @@ async def update_user_is_active(
 async def update_user_is_verified(
     user_id: int, is_verified_update: UserIsVerifiedUpdate, session: Session
 ):
+    """
+    Atualiza o status de verificação (is_verified) de um usuário, geralmente
+    após a verificação de e-mail.
+
+    Parâmetros:
+        - user_id: ID do usuário.
+        - is_verified_update: Novo status de verificação (True ou False).
+
+
+    Retorna:
+        Usuário atualizado (dados públicos).
+
+    Erros:
+        - 404: Usuário não encontrado.
+    """
     db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
-
     db_user.is_verified = is_verified_update.is_verified
     return db_user
 
@@ -206,13 +284,24 @@ async def update_user_is_verified(
 async def delete_user(
     user_id: int, session: Session, current_user: CurrentUser
 ):
-    db_user = await session.scalar(select(User).where(User.id == user_id))
+    """
+    Deleta um usuário do sistema pelo ID.
 
+    Parâmetros:
+        - user_id: ID do usuário a ser deletado.
+        - current_user: Usuário autenticado que está realizando a operação.
+
+    Retorna:
+        Nenhum conteúdo (status 204).
+
+    Erros:
+        - 404: Usuário não encontrado.
+    """
+    db_user = await session.scalar(select(User).where(User.id == user_id))
     if not db_user:
         raise HTTPException(
             status_code=404,
             detail='User not found',
         )
-
     await session.delete(db_user)
     await session.commit()

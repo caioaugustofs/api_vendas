@@ -15,7 +15,11 @@ dependencies = [
     "pyjwt (>=2.10.1,<3.0.0)",
     "pwdlib[argon2] (>=0.2.1,<0.3.0)",
     "aiosqlite (>=0.21.0,<0.22.0)",
-    "psycopg[binary] (>=3.2.7,<4.0.0)"
+    "psycopg[binary] (>=3.2.7,<4.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "opentelemetry-distro (>=0.53b1,<0.54)",
+    "opentelemetry-instrumentation-fastapi (>=0.53b1,<0.54)",
+    "opentelemetry-exporter-otlp (>=1.32.1,<2.0.0)"
 ]
 
 
@@ -55,3 +59,5 @@ run = 'fastapi dev vender_api/app.py --port 8001'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=vender_api -vv'
 post_test = 'coverage html'
+rm_build = 'docker rm -f vender-api:latest'
+build = 'docker build -t vender-api:latest .'

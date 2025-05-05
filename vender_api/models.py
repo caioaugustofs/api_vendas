@@ -3,9 +3,6 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, registry
 
-# Entradas de Estoque
-
-
 table_registry = registry()
 
 
@@ -72,7 +69,7 @@ class Estoque:
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     produto_sku: Mapped[str] = mapped_column(ForeignKey('produtos.sku'))
-    quantidade: Mapped[int] = mapped_column()
+    quantidade: Mapped[int] = mapped_column(default=0)
     fornecedor_id: Mapped[int | None] = mapped_column(
         nullable=True, default=None
     )
@@ -135,6 +132,48 @@ class SaidaEstoque:
     quantidade: Mapped[int] = mapped_column()
     data_saida: Mapped[datetime] = mapped_column()
     observacao: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+from sqlalchemy.orm import relationship
+
+
+@table_registry.mapped_as_dataclass
+class Categoria:
+    __tablename__ = 'categorias'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    nome: Mapped[str] = mapped_column()
+    # Relacionamento com Subcategoria (lista, sem default)
+    subcategorias: Mapped[list['Subcategoria']] = relationship(
+        'Subcategoria', back_populates='categoria'
+    )
+    descricao: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+# Nova tabela Subcategoria
+@table_registry.mapped_as_dataclass
+class Subcategoria:
+    __tablename__ = 'subcategorias'
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    nome: Mapped[str] = mapped_column()
+    categoria_id: Mapped[int] = mapped_column(ForeignKey('categorias.id'))
+    categoria: Mapped['Categoria'] = relationship(
+        'Categoria', back_populates='subcategorias'
+    )
+    descricao: Mapped[str | None] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )

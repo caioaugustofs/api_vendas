@@ -15,6 +15,8 @@ from vender_api.schemas.users_schemas import (
 from vender_api.security import get_current_user, get_password_hash
 from vender_api.tools.decorador import commit_and_refresh
 
+# Rotas para gerenciamento de usuários root (superusuários).
+# Permite criar o primeiro superusuário, listar, buscar por ID e alterar permissões de root.
 router = APIRouter(prefix='/users_root', tags=['Users root'])
 
 
@@ -33,7 +35,18 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
     detail='Erro ao criar o usuário root',
 )
 async def create_user_root(user: UserCreate, session: Session):
-    """Cria  um novo usuario"""
+    """
+    Cria o primeiro usuário root (superusuário) do sistema.
+
+    Parâmetros:
+        - user: Dados do novo usuário (nome, email, senha).
+
+    Retorna:
+        Usuário root criado (dados públicos).
+
+    Erros:
+        - 400: Já existe um superusuário cadastrado ou usuário já existe.
+    """
     # funcao funciona para criar o primeiro  superuser   ele so funciona um vez
     # se existir um usuario superuser ele vai não criar um usuario
 
@@ -94,7 +107,20 @@ async def get_users_root(
     skip: int = 0,
     limit: int = 25,
 ):
-    """Retorna todos os usuarios"""
+    """
+    Lista todos os usuários root (superusuários) cadastrados.
+
+    Parâmetros:
+        - current_user: Usuário autenticado (precisa ser superusuário).
+        - skip: Quantidade de registros a pular (paginação).
+        - limit: Quantidade máxima de registros a retornar.
+
+    Retorna:
+        Lista de usuários root (dados públicos).
+
+    Erros:
+        - 403: Não autorizado (usuário não é superusuário).
+    """
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403, detail='Not authorized to perform this action'
@@ -112,7 +138,20 @@ async def get_users_root(
 async def get_user_by_user_root(
     user_id: int, session: Session, current_user: CurrentUser
 ):
-    """Retorna um usuario pelo ID"""
+    """
+    Busca um usuário root (superusuário) pelo ID.
+
+    Parâmetros:
+        - user_id: ID do usuário.
+        - current_user: Usuário autenticado (precisa ser superusuário).
+
+    Retorna:
+        Usuário encontrado (dados públicos).
+
+    Erros:
+        - 403: Não autorizado (usuário não é superusuário).
+        - 404: Usuário não encontrado.
+    """
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403, detail='Not authorized to perform this action'
@@ -144,6 +183,21 @@ async def update_user_is_superuser(
     session: Session,
     current_user: CurrentUser,
 ):
+    """
+    Concede ou remove a permissão de superusuário (root) de um usuário pelo ID.
+
+    Parâmetros:
+        - user_id: ID do usuário.
+        - is_superuser_update: Novo status de superusuário (True ou False).
+        - current_user: Usuário autenticado (precisa ser superusuário).
+
+    Retorna:
+        Usuário atualizado (dados públicos).
+
+    Erros:
+        - 403: Não autorizado (usuário não é superusuário).
+        - 404: Usuário não encontrado.
+    """
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403, detail='Not authorized to perform this action'

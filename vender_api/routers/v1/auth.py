@@ -24,6 +24,19 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 @router.post('/token', response_model=Token)
 async def login_for_access_token(form_data: OAuth2Form, session: Session):
+    """
+    Autentica o usuário e retorna um token de acesso.
+    Essa rota é utilizada para realizar o login do usuário, recebendo email e senha e retornando um token JWT para autenticação nas próximas requisições.
+
+    Parâmetros:
+        - form_data: Dados do formulário OAuth2 (username = email, password = senha).
+
+    Retorna:
+        Um dicionário contendo o access_token (JWT) e o token_type (sempre 'bearer').
+
+    Erros:
+        - 401: Email ou senha incorretos.
+    """
     user = await session.scalar(
         select(User).where(User.email == form_data.username)
     )
@@ -47,5 +60,15 @@ async def login_for_access_token(form_data: OAuth2Form, session: Session):
 
 @router.post('/refresh_token', response_model=Token)
 async def refresh_token(user: CurrentUser):
+    """
+    Gera um novo token de acesso para o usuário autenticado.
+    Essa rota é utilizada para renovar o token JWT de um usuário já autenticado, sem necessidade de informar email e senha novamente.
+
+    Parâmetros:
+        - user: Usuário autenticado (obtido automaticamente pelo sistema).
+
+    Retorna:
+        Um novo access_token (JWT) e o token_type (sempre 'bearer').
+    """
     new_access_token = create_access_token(data={'sub': user.email})
     return {'access_token': new_access_token, 'token_type': 'bearer'}
